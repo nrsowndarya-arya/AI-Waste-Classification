@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoSort AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--ink:#1c2b22;--mut:#5d6b62;--bg:#f3f5f0;--line:#dfe4da;--g:#1f6b43}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font:15px/1.5 Inter,sans-serif;color:var(--ink);background:var(--bg)}
+h1,h2,.num{font-family:'Bricolage Grotesque',sans-serif;margin:0}
+button,input{font:inherit}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px}
+.btn{background:var(--g);color:#fff;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:500}
+.btn.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+#auth{min-height:100vh;display:grid;place-items:center;background:var(--ink);padding:20px}
+#auth .card{width:100%;max-width:380px}
+#auth h1{font-size:30px}#auth p{color:var(--mut);margin:4px 0 16px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}.tabs button{flex:1}.tabs .on{background:var(--g);color:#fff;border-color:var(--g)}
+input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+.err{color:#b3261e;min-height:1.4em;margin:0 0 8px}
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--ink);color:#fff;padding:24px 16px;display:flex;flex-direction:column;gap:6px}
+aside h1{font-size:24px;margin-bottom:18px}
+aside .nav{background:none;border:0;color:#b9c7bd;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
+aside .nav.on,aside .nav:hover{background:#2c4636;color:#fff}
+aside .who{margin-top:auto;color:#b9c7bd;font-size:13px}
+main{padding:28px 4vw;max-width:1100px;width:100%}
+main h2{font-size:26px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.kpi .num{font-size:32px;font-weight:700}.kpi span{color:var(--mut);font-size:13px}
+#drop{border:2px dashed var(--line);border-radius:8px;min-height:240px;display:grid;place-items:center;text-align:center;cursor:pointer;color:var(--mut);overflow:hidden}
+#drop.over,#drop:focus-visible{border-color:var(--g);outline:none}#drop img{max-width:100%;max-height:300px}
+.tag{display:inline-block;padding:3px 12px;border-radius:99px;color:#fff;font-weight:500}
+.bar{height:8px;border-radius:4px;background:var(--line);margin:3px 0 10px}.bar i{display:block;height:100%;border-radius:4px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}th{color:var(--mut);font-weight:500}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.top h2{margin:0}
+small.note{color:var(--mut)}
+.hero{background:linear-gradient(120deg,#1f6b43,#2e8b57);color:#fff;border-radius:12px;padding:26px 28px;margin-bottom:20px}
+.hero h2{font-size:26px;margin:0 0 4px}.hero p{margin:0;color:#d6ecdf}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.prog{height:12px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0}.prog i{display:block;height:100%;background:var(--g)}
+@media(max-width:800px){#app{grid-template-columns:1fr}aside{flex-direction:row;flex-wrap:wrap;align-items:center}aside h1{margin:0 12px 0 0}aside .who{margin:0 0 0 auto}.grid2,.kpis{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="auth">
+  <div class="card">
+    <h1>EcoSort AI</h1><p>Smart waste classification. Log in to continue.</p>
+    <div class="tabs"><button class="btn alt on" id="tl" onclick="setMode('login')">Log in</button><button class="btn alt" id="tr" onclick="setMode('register')">Register</button></div>
+    <form onsubmit="submitAuth(event)">
+      <div id="nameRow" hidden><input id="name" placeholder="Your name" autocomplete="name"></div>
+      <input id="email" type="email" placeholder="Email" required autocomplete="email">
+      <input id="pw" type="password" placeholder="Password (6+ characters)" required autocomplete="current-password">
+      <p class="err" id="err"></p>
+      <button class="btn" id="go" style="width:100%">Log in</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <aside>
+    <h1>EcoSort AI</h1>
+    <button class="nav on" data-p="classify">Classify</button>
+    <button class="nav" data-p="dash">Dashboard</button>
+    <button class="nav" data-p="hist">History</button>
+    <button class="nav" data-p="guide">Categories</button>
+    <div class="who"><div id="who"></div><button class="btn alt" style="margin-top:8px;padding:6px 12px" onclick="logout()">Log out</button></div>
+  </aside>
+  <main>
+    <section id="p-classify">
+      <div class="hero"><h2 id="hi">Welcome</h2><p>Upload a photo of any waste item and get the right bin instantly.</p><div class="chips" id="chips"></div></div>
+      <div class="grid2">
+        <div class="card"><div id="drop" tabindex="0" role="button" aria-label="Choose or drop an image"><span>Drop an image here or click to browse</span></div>
+          <input type="file" id="file" accept="image/*" hidden></div>
+        <div class="card" id="result"><h2 style="font-size:20px">Result</h2><p style="color:var(--mut)">Your classification will appear here.</p></div>
+      </div>
+      <div class="grid2" style="margin-top:20px">
+        <div class="card"><h2 style="font-size:18px">Recent scans</h2><div id="recent"></div></div>
+        <div class="card"><h2 style="font-size:18px">Did you know?</h2><p id="tip" style="margin-bottom:0"></p></div>
+      </div>
+    </section>
+
+    <section id="p-dash" hidden>
+      <h2>Your dashboard</h2>
+      <div class="kpis">
+        <div class="card kpi"><div class="num" id="total">0</div><span>Items classified</span></div>
+        <div class="card kpi"><div class="num" id="rec">-</div><span>Recyclable share</span></div>
+        <div class="card kpi"><div class="num" id="conf">-</div><span>Average confidence</span></div>
+        <div class="card kpi"><div class="num" id="co2">0</div><span>kg CO&#8322; saved (est.)</span></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h2 style="font-size:18px">Waste by category</h2><canvas id="pie"></canvas></div>
+        <div class="card"><h2 style="font-size:18px">Items per day</h2><canvas id="line"></canvas></div>
+      </div>
+      <div class="card" style="margin:20px 0"><h2 style="font-size:18px">Eco level: <span id="lvl"></span></h2><div class="prog"><i id="lvlbar" style="width:0"></i></div><p id="lvltxt" style="margin:0;color:var(--mut)"></p></div>
+      <p><small class="note">CO&#8322; figures are illustrative estimates per recycled item, not measured values.</small></p>
+    </section>
+
+    <section id="p-hist" hidden>
+      <div class="top"><h2>History</h2><button class="btn" onclick="exportCsv()">Export CSV</button></div>
+      <div class="card"><table><thead><tr><th>Time</th><th>File</th><th>Category</th><th>Confidence</th></tr></thead><tbody id="hist"></tbody></table></div>
+    </section>
+    <section id="p-guide" hidden>
+      <h2>Categories &amp; how it works</h2>
+      <div class="card" style="margin-bottom:20px">
+        <h2 style="font-size:18px">How a decision is made</h2>
+        <ol style="padding-left:20px;margin-bottom:0">
+          <li>Your photo is resized to 224 x 224 pixels and normalised.</li>
+          <li>A MobileNetV2 neural network (fine-tuned on the TrashNet dataset of 2,527 images) scores all 6 categories.</li>
+          <li>The scores become probabilities. The highest one is the predicted category, and the top 3 are shown as bars.</li>
+          <li>A fixed rule table maps the category to a bin colour, a recyclable / not recyclable label and a disposal tip.</li>
+          <li>If the top probability is below 60%, the app warns that the model is unsure.</li>
+        </ol>
+        <p><small class="note">Accuracy on 506 unseen test images: 92.1%. Photos that look very different from the training data (for example reflective cans or cluttered scenes) can be misclassified. Bin colours are this project's convention, so always follow your local recycling rules.</small></p>
+      </div>
+      <div class="card" style="margin-bottom:20px"><h2 style="font-size:18px">Model performance: F1 score per category (506 test images)</h2><canvas id="f1" height="110"></canvas></div>
+      <div class="grid2" id="cats"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $=s=>$d(s),$d=s=>document.querySelector(s),pct=x=>(x*100).toFixed(1)+'%';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COL={cardboard:'#2f6fb5',paper:'#5b9bd5',glass:'#2e8b57',metal:'#d9a400',plastic:'#c8453b',trash:'#444'},col=l=>COL[l]||'#777';
+let mode='login',charts={};
+
+function setMode(m){mode=m;$('#nameRow').hidden=m==='login';$('#go').textContent=m==='login'?'Log in':'Create account';
+  $('#tl').classList.toggle('on',m==='login');$('#tr').classList.toggle('on',m==='register');$('#err').textContent='';
+  $('#pw').autocomplete=m==='login'?'current-password':'new-password'}
+async function submitAuth(e){e.preventDefault();
+  const r=await fetch('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:$('#name').value,email:$('#email').value,password:$('#pw').value})});
+  const d=await r.json();
+  if(!r.ok){$('#err').textContent=typeof d.detail==='string'?d.detail:'Please check your details.';return}
+  localStorage.setItem('t',d.token);start()}
+function logout(){localStorage.removeItem('t');$('#app').hidden=true;$('#auth').hidden=false}
+async function api(p,o={}){const r=await fetch('/api/'+p,{...o,headers:{Authorization:'Bearer '+localStorage.getItem('t')}});
+  if(r.status===401){logout();throw new Error('auth')}return r}
+async function start(){
+  try{const u=await (await api('me')).json();$('#who').textContent=u.name;$('#hi').textContent='Welcome back, '+u.name;$('#auth').hidden=true;$('#app').hidden=false;nav('classify')}catch(e){}}
+
+const GUIDE=[['cardboard','Blue bin',1,'Shipping boxes, cartons','Flatten boxes and keep them dry.'],
+['paper','Blue bin',1,'Newspapers, office paper, magazines','Keep clean and dry. Greasy paper is not recyclable.'],
+['glass','Green bin',1,'Bottles, jars','Rinse and remove lids. Do not mix with ceramics.'],
+['metal','Yellow bin',1,'Drink cans, tins, foil trays','Rinse cans; crush if possible to save space.'],
+['plastic','Red bin',1,'Bottles, containers, packaging','Rinse, check the resin code, and remove caps.'],
+['trash','Black bin',0,'Mixed, soiled or non-recyclable items','Dispose with general waste.']];
+$('#cats').innerHTML=GUIDE.map(([l,b,r,e,t])=>`<div class="card" style="border-left:6px solid ${col(l)}"><span class="tag" style="background:${col(l)}">${l}</span> &nbsp;<b>${b}</b> - ${r?'recyclable':'not recyclable'}<p style="margin:10px 0 4px"><b>Examples:</b> ${e}</p><p style="margin:0;color:var(--mut)">${t}</p></div>`).join('');
+const TIPS=['Aluminium can be recycled again and again without losing quality.','Glass can be recycled endlessly without any loss in quality.','Greasy pizza boxes usually cannot be recycled because food oil contaminates the paper.','Flattening cardboard boxes saves space in collection bins.','Rinsing containers helps stop whole batches of recycling being rejected.','Accepted materials differ between cities, so always check your local rules.'];
+$('#tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];
+$('#chips').innerHTML=GUIDE.map(g=>`<span class="tag" style="background:${col(g[0])}">${g[0]}</span>`).join('');
+async function loadRecent(){const h=await (await api('history')).json();
+  $('#recent').innerHTML=h.slice(0,5).map(r=>`<div class="row"><span>${esc(r.file)}</span><span class="tag" style="background:${col(r.label)}">${esc(r.label)}</span></div>`).join('')||'<p style="color:var(--mut);margin:0">Nothing yet. Classify your first item!</p>'}
+const F1={cardboard:.974,glass:.903,metal:.947,paper:.938,plastic:.881,trash:.841};let f1c;
+function drawF1(){f1c&&f1c.destroy();f1c=new Chart($('#f1'),{type:'bar',data:{labels:Object.keys(F1),datasets:[{data:Object.values(F1),backgroundColor:Object.keys(F1).map(col)}]},options:{plugins:{legend:{display:false}},scales:{y:{min:.5,max:1}}}})}
+function nav(p){['classify','dash','hist','guide'].forEach(x=>$('#p-'+x).hidden=x!==p);
+  document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  if(p==='dash')loadDash();if(p==='hist')loadHist();if(p==='guide')drawF1();if(p==='classify')loadRecent()}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>nav(b.dataset.p));
+
+async function loadDash(){
+  const s=await (await api('stats')).json(),labels=Object.keys(s.by_class);
+  $('#total').textContent=s.total;$('#conf').textContent=s.total?pct(s.avg_conf):'-';$('#co2').textContent=s.co2_kg;
+  const rec=labels.filter(k=>k!=='trash').reduce((a,k)=>a+s.by_class[k],0);
+  $('#rec').textContent=s.total?Math.round(rec/s.total*100)+'%':'-';
+  const L=s.total>=30?['Eco Hero',100,'Top level reached. Great work!']:s.total>=10?['Sorter',s.total/30*100,(30-s.total)+' more items to reach Eco Hero']:['Beginner',s.total/10*100,(10-s.total)+' more items to reach Sorter'];
+  $('#lvl').textContent=L[0];$('#lvlbar').style.width=L[1]+'%';$('#lvltxt').textContent=L[2];
+  Object.values(charts).forEach(c=>c.destroy());
+  charts.pie=new Chart($('#pie'),{type:'doughnut',data:{labels,datasets:[{data:Object.values(s.by_class),backgroundColor:labels.map(col)}]},options:{plugins:{legend:{position:'bottom'}}}});
+  charts.line=new Chart($('#line'),{type:'line',data:{labels:s.by_day.map(d=>d[0]),datasets:[{data:s.by_day.map(d=>d[1]),borderColor:'#1f6b43',tension:.3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
+async function loadHist(){
+  const h=await (await api('history')).json();
+  $('#hist').innerHTML=h.length?h.map(r=>`<tr><td>${esc(r.time)}</td><td>${esc(r.file)}</td><td><span class="tag" style="background:${col(r.label)}">${esc(r.label)}</span></td><td>${pct(r.confidence)}</td></tr>`).join(''):'<tr><td colspan="4">No classifications yet.</td></tr>'}
+async function exportCsv(){const b=await (await api('export')).blob(),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='ecosort_history.csv';a.click()}
+
+async function classify(f){
+  if(!f)return;
+  $('#drop').innerHTML=`<img src="${URL.createObjectURL(f)}" alt="Selected waste item">`;
+  $('#result').innerHTML='<h2 style="font-size:20px">Result</h2><p>Classifying...</p>';
+  const fd=new FormData();fd.append('file',f);
+  const r=await api('predict',{method:'POST',body:fd}),d=await r.json();
+  if(!r.ok){$('#result').innerHTML=`<h2 style="font-size:20px">Result</h2><p class="err">${esc(d.detail)}</p>`;return}
+  $('#result').innerHTML=`<h2 style="font-size:20px">Result</h2>
+   <p><span class="tag" style="background:${col(d.label)}">${esc(d.label)}</span> &nbsp;${pct(d.confidence)} confident</p>
+   ${d.confidence<0.6?'<p class="err"><b>Low confidence.</b> Try a clearer photo on a plain background.</p>':''}
+   <p><b>${esc(d.bin)}</b> - ${d.recyclable?'recyclable':'not recyclable'}<br>${esc(d.tip)}</p>
+   ${d.top3.map(t=>`<div>${esc(t.label)} <small>${pct(t.confidence)}</small></div><div class="bar"><i style="width:${t.confidence*100}%;background:${col(t.label)}"></i></div>`).join('')}`}
+const drop=$('#drop'),inp=$('#file');
+drop.onclick=()=>inp.click();drop.onkeydown=e=>e.key==='Enter'&&inp.click();
+inp.onchange=async()=>{await classify(inp.files[0]);loadRecent()};
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');classify(e.dataTransfer.files[0]).then(loadRecent)};
+if(localStorage.getItem('t'))start();
+</script>
+</body>
+</html>
